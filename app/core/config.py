@@ -1,9 +1,9 @@
 """Application configuration using Pydantic settings."""
 
-from typing import List, Optional, Union, Any
+from typing import List, Optional, Any
 from functools import lru_cache
 
-from pydantic import PostgresDsn, field_validator, ValidationInfo
+from pydantic import PostgresDsn, field_validator, ValidationInfo, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/v1"
     
     # Security
-    SECRET_KEY: str
+    SECRET_KEY: Optional[str] = None
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     # Database
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_USER: str = "crucible"
-    POSTGRES_PASSWORD: str
+    POSTGRES_PASSWORD: Optional[str] = None
     POSTGRES_DB: str = "crucible"
     POSTGRES_PORT: int = 5432
     DATABASE_URL: Optional[PostgresDsn] = None
@@ -96,6 +96,15 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "json"
+    
+    @model_validator(mode='after')
+    def validate_required_fields(self) -> 'Settings':
+        """Validate that required fields are provided."""
+        if not self.SECRET_KEY:
+            raise ValueError("SECRET_KEY must be set in environment variables")
+        if not self.POSTGRES_PASSWORD:
+            raise ValueError("POSTGRES_PASSWORD must be set in environment variables")
+        return self
 
 
 @lru_cache()
